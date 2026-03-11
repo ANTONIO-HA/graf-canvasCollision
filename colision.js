@@ -3,13 +3,10 @@ let ctx = canvas.getContext("2d");
 
 let circles = [];
 
-// Función para ajustar el tamaño del canvas dinámicamente (Responsivo)
 function resizeCanvas() {
-    // Tomamos las dimensiones exactas que el CSS le está asignando al canvas visualmente
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
 
-    // Ajustar las posiciones de los círculos si la pantalla se encoge
     circles.forEach(circle => {
         if (circle.posX + circle.radius > canvas.width) {
             circle.posX = canvas.width - circle.radius;
@@ -21,13 +18,7 @@ function resizeCanvas() {
 }
 
 window.addEventListener('resize', resizeCanvas); 
-resizeCanvas();
-
-// 3. Llamada inicial y evento de escucha
-window.addEventListener('resize', resizeCanvas); 
-resizeCanvas(); // Ahora la llamamos de forma segura
-
-canvas.style.background = "rgb(188, 230, 247)";
+resizeCanvas(); 
 
 class Circle {
     constructor(x, y, radius, color, text, speed) {
@@ -38,16 +29,26 @@ class Circle {
         this.color = color;
         this.text = text;
         this.speed = speed;
+        this.mass = this.radius; 
         
         this.dx = (Math.random() < 0.5 ? 1 : -1) * this.speed;
         this.dy = (Math.random() < 0.5 ? 1 : -1) * this.speed;
         
-        this.isColliding = false; 
+        // REEMPLAZO: Temporizador en lugar de booleano
+        this.flashTimer = 0; 
     }
 
     draw(context) {
         context.beginPath();
-        context.strokeStyle = this.isColliding ? "#0000FF" : this.originalColor;
+        
+        // Si el temporizador es mayor a 0, pintamos azul y reducimos el tiempo
+        if (this.flashTimer > 0) {
+            context.strokeStyle = "#0000FF";
+            this.flashTimer--; 
+        } else {
+            context.strokeStyle = this.originalColor;
+        }
+
         context.textAlign = "center";
         context.textBaseline = "middle";
         context.font = "20px Arial";
@@ -61,37 +62,68 @@ class Circle {
     }
 
     checkCollisions(circlesArray) {
-        this.isColliding = false; 
-
-        for (let i = 0; i < circlesArray.length; i++) {
+        let myIndex = circlesArray.indexOf(this);
+        
+        for (let i = myIndex + 1; i < circlesArray.length; i++) {
             let otherCircle = circlesArray[i];
-
-            if (this === otherCircle) continue;
 
             let dx = this.posX - otherCircle.posX;
             let dy = this.posY - otherCircle.posY;
             let distance = Math.sqrt(dx * dx + dy * dy);
 
             if (distance < this.radius + otherCircle.radius) {
-                this.isColliding = true;
-                break; 
+                // Le damos 5 fotogramas de duración al flash azul
+                this.flashTimer = 5;
+                otherCircle.flashTimer = 5;
+
+                this.resolveCollision(otherCircle, dx, dy, distance);
             }
         }
     }
 
-    update(context) {
-        this.draw(context);
+    resolveCollision(otherCircle, dx, dy, distance) {
+        let overlap = (this.radius + otherCircle.radius) - distance;
+        let nx = dx / distance; 
+        let ny = dy / distance; 
 
+        this.posX += nx * (overlap / 2);
+        this.posY += ny * (overlap / 2);
+        otherCircle.posX -= nx * (overlap / 2);
+        otherCircle.posY -= ny * (overlap / 2);
+
+        let v1n = this.dx * nx + this.dy * ny;
+        let v2n = otherCircle.dx * nx + otherCircle.dy * ny;
+
+        let v1t = this.dx * -ny + this.dy * nx;
+        let v2t = otherCircle.dx * -ny + otherCircle.dy * nx;
+
+        let m1 = this.mass;
+        let m2 = otherCircle.mass;
+
+        let v1nFinal = (v1n * (m1 - m2) + 2 * m2 * v2n) / (m1 + m2);
+        let v2nFinal = (v2n * (m2 - m1) + 2 * m1 * v1n) / (m1 + m2);
+
+        this.dx = v1nFinal * nx - v1t * ny;
+        this.dy = v1nFinal * ny + v1t * nx;
+        
+        otherCircle.dx = v2nFinal * nx - v2t * ny;
+        otherCircle.dy = v2nFinal * ny + v2t * nx;
+    }
+
+    // NUEVO MÉTODO: Separa la lógica física del dibujo visual
+    move() {
         this.posX += this.dx;
 
         if (this.posX + this.radius > canvas.width || this.posX - this.radius < 0) {
             this.dx = -this.dx;
+            this.posX = this.posX < this.radius ? this.radius : canvas.width - this.radius;
         }
 
         this.posY += this.dy;
 
         if (this.posY + this.radius > canvas.height || this.posY - this.radius < 0) {
             this.dy = -this.dy;
+            this.posY = this.posY < this.radius ? this.radius : canvas.height - this.radius;
         }
     }
 }
@@ -112,13 +144,16 @@ function generateCircles(n) {
 function animate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height); 
     
-    circles.forEach(circle => {
-        circle.checkCollisions(circles);
-    });
+    // NUEVO ORDEN DEL GAME LOOP (Mejor estructurado para evitar Bugs)
+    
+    // 1. Movemos todos los círculos a sus nuevas posiciones
+    circles.forEach(circle => circle.move());
 
-    circles.forEach(circle => {
-        circle.update(ctx); 
-    });
+    // 2. Verificamos colisiones y ajustamos si es necesario
+    circles.forEach(circle => circle.checkCollisions(circles));
+
+    // 3. Dibujamos el resultado final en la pantalla
+    circles.forEach(circle => circle.draw(ctx));
     
     requestAnimationFrame(animate); 
 }
