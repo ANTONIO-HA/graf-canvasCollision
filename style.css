@@ -1,28 +1,22 @@
-/* Reseteo básico para evitar márgenes ocultos que causen scroll */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-/* Evita cualquier barra de desplazamiento y usa flexbox para la distribución */
 body {
-    background-color: #2b2d42; /* Fondo oscuro para hacer contraste */
+    background-color: #2b2d42; 
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    overflow: hidden; 
-    height: 100vh; /* Ocupa exactamente el 100% del alto de la ventana */
-    display: flex;
-    flex-direction: column;
+    /* Eliminamos overflow: hidden para que aparezca la barra de desplazamiento */
 }
 
-/* Estilo para el título */
+/* El título vuelve a ser un bloque normal que ocupa su propio espacio */
 header {
     text-align: center;
     padding: 15px 0;
-    background-color: #1a1a2e; /* Un tono aún más oscuro para la barra superior */
+    background-color: #1a1a2e; 
     color: #ffffff;
     box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-    z-index: 10;
 }
 
 h1 {
@@ -31,29 +25,41 @@ h1 {
     text-transform: uppercase;
 }
 
-/* Contenedor principal que toma el espacio sobrante */
 main {
-    flex-grow: 1; /* Toma todo el alto disponible debajo del título */
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 20px; /* Margen para que el canvas se vea como un cuadro enmarcado */
+    padding: 20px; 
 }
 
-/* El marco del canvas */
 .canvas-container {
     width: 100%;
-    height: 100%;
-    border-radius: 15px; /* Bordes redondeados */
+    /* Al ponerle 100vh, el canvas será tan alto como tu pantalla entera. 
+       Sumado al título y al padding, generará el scroll que buscas. */
+    height: 100vh; 
+    border-radius: 15px; 
     overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5); /* Sombra para darle profundidad */
-    border: 4px solid #ffffff; /* Borde blanco para resaltar */
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+    border: 4px solid #ffffff; 
 }
 
-/* El área de colisiones con tu color específico */
 canvas {
     display: block;
     width: 100%;
     height: 100%;
-    background-color: rgb(188, 230, 247);
+    
+    /* Agregamos tu GIF de fondo */
+    background-image: url('assets/img/fondo.gif');
+    
+    /* Hacemos que la imagen cubra todo el espacio sin importar el tamaño de la pantalla */
+    background-size: cover; 
+    
+    /* Centramos el GIF para que siempre se vea la mejor parte */
+    background-position: center; 
+    
+    /* (Opcional) Si prefieres que el GIF se estire y se deforme un poco para 
+       encajar exactamente en el ancho y alto sin recortar nada, borra 
+       "background-size: cover;" y usa esta línea:
+       background-size: 100% 100%; 
+    */
 }
